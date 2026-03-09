@@ -1,0 +1,23 @@
+{
+  "name": "doon-explorer",
+  "version": "2.0.0",
+  "description": "Doon Explorer — Dehradun Live Tourist Guide with ML Forecasting",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "ml": "python ml_api.py"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["dehradun", "tourism", "ml-forecast", "crowd-prediction"],
+  "author": "Doon Explorer Team",
+  "license": "MIT"
+}

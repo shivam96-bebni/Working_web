@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doon Explorer — Dehradun Live Guide</title>
+  <meta name="description" content="Live crowd forecasts, interactive map, hotels & shops for Dehradun tourists.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Leaflet Map -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="loading-inner">
+    <div class="loading-brand">Doon<span>Explorer</span></div>
+    <div class="loading-sub">Dehradun Live Guide</div>
+    <div class="loading-track"><div class="loading-fill" id="loadFill"></div></div>
+    <div class="loading-hint" id="loadHint">Loading places…</div>
+  </div>
+</div>
+
+<!-- SIDEBAR NAV -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sl-icon">🏔️</div>
+    <div class="sl-text">
+      <div class="sl-name">Doon Explorer</div>
+      <div class="sl-city">Dehradun, Uttarakhand</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="snav active" data-panel="map" onclick="switchPanel('map',this)">
+      <span class="snav-icon">🗺️</span><span>Live Map</span>
+    </button>
+    <button class="snav" data-panel="places" onclick="switchPanel('places',this)">
+      <span class="snav-icon">🏛️</span><span>Tourist Spots</span>
+    </button>
+    <button class="snav" data-panel="hotels" onclick="switchPanel('hotels',this)">
+      <span class="snav-icon">🏨</span><span>Hotels</span>
+    </button>
+    <button class="snav" data-panel="shops" onclick="switchPanel('shops',this)">
+      <span class="snav-icon">🛍️</span><span>Live Shops</span>
+    </button>
+    <button class="snav" data-panel="forecast" onclick="switchPanel('forecast',this)">
+      <span class="snav-icon">📊</span><span>ML Forecast</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-weather" id="sidebar-weather">
+    <div class="sw-icon">🌤️</div>
+    <div class="sw-info">
+      <div class="sw-temp" id="sw-temp">--°C</div>
+      <div class="sw-cond" id="sw-cond">Loading…</div>
+    </div>
+    <div class="sw-live">
+      <div class="live-dot"></div>
+      <span id="sw-time">--:--</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sf-stat"><span id="sf-open">--</span> Open Now</div>
+    <div class="sf-stat"><span id="sf-crowd">--%</span> Avg Crowd</div>
+  </div>
+</aside>
+
+<!-- MOBILE TOPBAR -->
+<header class="mobile-bar">
+  <button class="mob-menu" onclick="toggleSidebar()">☰</button>
+  <div class="mob-brand">🏔️ Doon Explorer</div>
+  <div class="mob-time" id="mob-time">--:--</div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main-wrap">
+
+  <!-- ══════════════ MAP PANEL ══════════════ -->
+  <section class="panel active" id="panel-map">
+    <div class="map-layout">
+      <!-- Left: map controls + info -->
+      <div class="map-sidebar">
+        <div class="ms-header">
+          <h2 class="ms-title">Interactive Map</h2>
+          <p class="ms-sub">Click any marker for live crowd & info</p>
+        </div>
+
+        <!-- Time selector -->
+        <div class="ms-ctrl-block">
+          <label class="ms-ctrl-label">⏰ Select Time</label>
+          <div class="time-dial">
+            <button onclick="changeHour(-1)" class="tdial-btn">‹</button>
+            <div class="tdial-val" id="map-time-val">--:--</div>
+            <button onclick="changeHour(1)" class="tdial-btn">›</button>
+          </div>
+        </div>
+
+        <!-- Weather filter -->
+        <div class="ms-ctrl-block">
+          <label class="ms-ctrl-label">🌤️ Weather</label>
+          <div class="wx-pills">
+            <button class="wxp active" data-w="sunny" onclick="setWeather(this,'sunny')">☀️ Sunny</button>
+            <button class="wxp" data-w="cloudy" onclick="setWeather(this,'cloudy')">⛅ Cloudy</button>
+            <button class="wxp" data-w="rainy" onclick="setWeather(this,'rainy')">🌧️ Rainy</button>
+            <button class="wxp" data-w="foggy" onclick="setWeather(this,'foggy')">🌫️ Foggy</button>
+          </div>
+        </div>
+
+        <!-- Layer toggles -->
+        <div class="ms-ctrl-block">
+          <label class="ms-ctrl-label">🔍 Show on Map</label>
+          <div class="layer-toggles">
+            <label class="ltog"><input type="checkbox" id="lt-places" checked onchange="toggleLayer('places')"><span>Tourist Spots</span></label>
+            <label class="ltog"><input type="checkbox" id="lt-hotels" checked onchange="toggleLayer('hotels')"><span>Hotels</span></label>
+            <label class="ltog"><input type="checkbox" id="lt-shops" checked onchange="toggleLayer('shops')"><span>Shops</span></label>
+          </div>
+        </div>
+
+        <!-- Map legend -->
+        <div class="map-legend">
+          <div class="ml-row"><div class="ml-dot" style="background:#22c55e"></div><span>Low crowd / Open</span></div>
+          <div class="ml-row"><div class="ml-dot" style="background:#f59e0b"></div><span>Moderate crowd</span></div>
+          <div class="ml-row"><div class="ml-dot" style="background:#ef4444"></div><span>High crowd / Closed</span></div>
+          <div class="ml-row"><div class="ml-dot" style="background:#3b82f6"></div><span>Hotel</span></div>
+          <div class="ml-row"><div class="ml-dot" style="background:#a855f7"></div><span>Shop</span></div>
+        </div>
+      </div>
+
+      <!-- Right: actual map -->
+      <div class="map-container">
+        <div id="leaflet-map"></div>
+        <!-- Floating info card -->
+        <div class="map-infocard" id="map-infocard">
+          <button class="mic-close" onclick="closeInfoCard()">✕</button>
+          <div class="mic-type" id="mic-type">Place</div>
+          <div class="mic-name" id="mic-name">--</div>
+          <div class="mic-sub" id="mic-sub">--</div>
+          <div class="mic-crowd-row" id="mic-crowd-row">
+            <div class="mic-crowd-bar-wrap">
+              <div class="mic-crowd-bar"><div class="mic-crowd-fill" id="mic-crowd-fill"></div></div>
+            </div>
+            <span class="mic-crowd-pct" id="mic-crowd-pct">--%</span>
+          </div>
+          <div class="mic-status" id="mic-status">--</div>
+          <button class="mic-detail-btn" id="mic-detail-btn" onclick="openDetailFromMap()">View Details →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ PLACES PANEL ══════════════ -->
+  <section class="panel" id="panel-places">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Tourist Spots</h2>
+        <p class="panel-sub">Live crowd forecasts for Dehradun's best attractions</p>
+      </div>
+      <div class="panel-controls">
+        <select class="ctrl-select" id="cat-filter" onchange="filterPlaces()">
+          <option value="all">All Categories</option>
+          <option value="nature">🌿 Nature</option>
+          <option value="temple">🛕 Temples</option>
+          <option value="wildlife">🦌 Wildlife</option>
+          <option value="waterfall">💧 Waterfalls</option>
+          <option value="market">🛍️ Markets</option>
+          <option value="heritage">🏛️ Heritage</option>
+        </select>
+        <div class="hour-ctrl">
+          <button onclick="changeHour(-1)" class="hc-btn">−</button>
+          <span class="hc-val" id="places-hour-val">--:--</span>
+          <button onclick="changeHour(1)" class="hc-btn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="summary-strip">
+      <div class="ss-item"><div class="ss-val" id="ps-open">--</div><div class="ss-lbl">Open Now</div></div>
+      <div class="ss-div"></div>
+      <div class="ss-item"><div class="ss-val" id="ps-crowd">--%</div><div class="ss-lbl">Avg Crowd</div></div>
+      <div class="ss-div"></div>
+      <div class="ss-item"><div class="ss-val" id="ps-best">--</div><div class="ss-lbl">Least Crowded</div></div>
+      <div class="ss-div"></div>
+      <div class="ss-item"><div class="ss-val" id="ps-temp">--°C</div><div class="ss-lbl">Temperature</div></div>
+    </div>
+
+    <!-- Places grid -->
+    <div class="places-grid" id="places-grid"></div>
+  </section>
+
+  <!-- ══════════════ HOTELS PANEL ══════════════ -->
+  <section class="panel" id="panel-hotels">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Hotels & Stays</h2>
+        <p class="panel-sub">Book accommodations near Dehradun's top spots</p>
+      </div>
+      <div class="panel-controls">
+        <select class="ctrl-select" id="hotel-filter" onchange="filterHotels()">
+          <option value="all">All Types</option>
+          <option value="luxury">⭐ Luxury</option>
+          <option value="mid">🏨 Mid-Range</option>
+          <option value="budget">💰 Budget</option>
+          <option value="resort">🌿 Resort</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hotels-grid" id="hotels-grid"></div>
+  </section>
+
+  <!-- ══════════════ SHOPS PANEL ══════════════ -->
+  <section class="panel" id="panel-shops">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Live Shops & Markets</h2>
+        <p class="panel-sub">Real-time open/closed status for local shops</p>
+      </div>
+      <div class="panel-controls">
+        <select class="ctrl-select" id="shop-filter" onchange="filterShops()">
+          <option value="all">All Types</option>
+          <option value="food">🍜 Food & Dining</option>
+          <option value="market">🛒 Markets</option>
+          <option value="craft">🎨 Crafts & Souvenirs</option>
+          <option value="pharmacy">💊 Pharmacy</option>
+          <option value="general">🏪 General</option>
+        </select>
+        <div class="toggle-row">
+          <label class="tgl-label">
+            <input type="checkbox" id="open-only" onchange="filterShops()">
+            <span>Open only</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="shops-grid" id="shops-grid"></div>
+  </section>
+
+  <!-- ══════════════ ML FORECAST PANEL ══════════════ -->
+  <section class="panel" id="panel-forecast">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">ML Tourist Forecast</h2>
+        <p class="panel-sub">RandomForest predictions for annual tourist volumes</p>
+      </div>
+      <div class="panel-controls">
+        <div class="ml-status-chip" id="ml-chip">
+          <div class="ml-status-dot" id="ml-dot"></div>
+          <span id="ml-chip-text">Checking…</span>
+        </div>
+        <button class="btn-refresh" onclick="loadMLForecast()">↺ Refresh</button>
+      </div>
+    </div>
+
+    <div class="ml-year-nav">
+      <button class="myn-btn" onclick="changeMLYear(-1)">‹</button>
+      <div class="myn-label">Forecast Year: <strong id="ml-year">2025</strong></div>
+      <button class="myn-btn" onclick="changeMLYear(1)">›</button>
+    </div>
+
+    <div class="ml-chart-card">
+      <div class="ml-chart-inner" id="ml-bar-chart">
+        <div class="ml-placeholder">Loading ML forecast…</div>
+      </div>
+    </div>
+
+    <div class="ml-stats-row">
+      <div class="mls-card">
+        <div class="mls-icon">📈</div>
+        <div class="mls-lbl">Peak Month</div>
+        <div class="mls-val" id="ml-peak">--</div>
+      </div>
+      <div class="mls-card">
+        <div class="mls-icon">🧳</div>
+        <div class="mls-lbl">Annual Total</div>
+        <div class="mls-val" id="ml-total">--</div>
+      </div>
+      <div class="mls-card">
+        <div class="mls-icon">📉</div>
+        <div class="mls-lbl">Quietest</div>
+        <div class="mls-val" id="ml-quiet">--</div>
+      </div>
+      <div class="mls-card">
+        <div class="mls-icon">🎯</div>
+        <div class="mls-lbl">Model MAE</div>
+        <div class="mls-val" id="ml-mae">--</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- PLACE DETAIL MODAL -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-modal" id="detail-modal">
+    <button class="detail-close" onclick="closeDetailBtn()">✕</button>
+
+    <!-- Gallery -->
+    <div class="dm-gallery">
+      <div class="dm-photos" id="dm-photos"></div>
+      <button class="dm-nav dm-prev" onclick="galleryMove(-1)">‹</button>
+      <button class="dm-nav dm-next" onclick="galleryMove(1)">›</button>
+      <div class="dm-gallery-overlay">
+        <div class="dm-gallery-title" id="dm-gtitle"></div>
+        <div class="dm-gallery-sub" id="dm-gsub"></div>
+      </div>
+      <div class="dm-dots" id="dm-dots"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dm-tabs">
+      <button class="dmt active" onclick="dmTab(this,'overview')">Overview</button>
+      <button class="dmt" onclick="dmTab(this,'crowd')">Crowd</button>
+      <button class="dmt" onclick="dmTab(this,'history')">History</button>
+      <button class="dmt" onclick="dmTab(this,'tips')">Tips</button>
+    </div>
+
+    <div class="dm-body" id="dm-body">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+
+<script type="module" src="js/data.js"></script>
+<script type="module" src="js/app.js"></script>
+<script type="module" src="js/map.js"></script>
+<script type="module" src="js/ml.js"></script>
+</body>
+</html>
